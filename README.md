@@ -36,7 +36,7 @@
 ### 2. Install Dependencies
 
 ```powershell
-cd "c:\Users\ssola\Pscx2 discord rich presence"
+cd "c:\Users\USER\Pscx2 discord rich presence"
 pip install -r requirements.txt
 ```
 
