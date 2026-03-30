@@ -1,0 +1,29 @@
+# Discord Rich Presence
+pypresence>=4.3.0
+
+# System / process monitoring
+psutil>=5.9.0
+pywin32>=306; sys_platform == "win32"
+
+# Configuration & validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+pyyaml>=6.0
+
+# Async HTTP & file I/O
+aiohttp>=3.9.0
+aiofiles>=23.0.0
+
+# Logging
+loguru>=0.7.0
+
+# Image processing
+pillow>=10.0.0
+
+# Async SQLite cache
+aiosqlite>=0.19.0
+
+# Dev / test
+pytest>=7.0; extra == "dev"
+pytest-asyncio>=0.23; extra == "dev"
+pytest-mock>=3.0; extra == "dev"

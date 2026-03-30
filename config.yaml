@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PCSX2 Discord Rich Presence — Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# Copy this file to config.local.yaml and put your secrets in there.
+# config.local.yaml is gitignored so your keys stay private.
+# ─────────────────────────────────────────────────────────────────────────────
+
+discord:
+  # Create a Discord Application at https://discord.com/developers/applications
+  # Copy the Application ID here.
+  client_id: "YOUR_DISCORD_APP_CLIENT_ID"
+
+pcsx2:
+  # Leave null for auto-detection (reads %APPDATA%\PCSX2\logs\emulog.txt on Windows)
+  log_path: null
+  # Process name glob — matches pcsx2.exe, pcsx2-qt.exe, pcsx2-avx2.exe, etc.
+  process_name: "pcsx2"
+  # Seconds between state polls
+  poll_interval_seconds: 5
+
+metadata:
+  # --- IGDB (Twitch Developer) ---
+  # Register free at: https://dev.twitch.tv/console
+  # Needed for game title, cover art, and IGDB button link.
+  igdb_client_id: ""
+  igdb_client_secret: ""
+
+  # --- ScreenScraper.fr ---
+  # Optional — increases API rate limits (free account at screenscraper.fr)
+  screenscraper_username: ""
+  screenscraper_password: ""
+
+  # How many days before cached metadata is refreshed
+  cache_ttl_days: 7
+
+  # Path to a local ps2tdb.xml / ps2_database.xml for offline fallback
+  # Download from https://www.gametdb.com/PS2db.txt
+  gametdb_path: null
+
+presence:
+  # Hide game title (privacy mode) — shows "Playing a PS2 game" instead
+  privacy_mode: false
+
+  # Show cover art as the large Discord image
+  show_cover_art: true
+
+  # Show elapsed playtime timer
+  show_elapsed_time: true
+
+  # Override the "details" line (null = auto "Playing <Game Title>")
+  custom_details: null
+
+  # Override the "state" line (null = auto "In Game" / "Paused" / "At BIOS")
+  custom_state: null
+
+  # Minimum seconds between Discord API updates (Discord enforces ~15s)
+  min_update_interval_seconds: 16
+
+  # Seconds of no-change before clearing presence after PCSX2 exits
+  clear_delay_seconds: 10
+
+  buttons:
+    - label: "View on IGDB"
+      enabled: true
+    # - label: "RetroAchievements"
+    #   enabled: false
+
+logging:
+  # DEBUG | INFO | WARNING | ERROR
+  level: "INFO"
+  # Write logs to ~/.pcsx2rpc/pcsx2rpc.log
+  file_enabled: true
+  # Max size in MB before log rotation
+  rotation_mb: 10
