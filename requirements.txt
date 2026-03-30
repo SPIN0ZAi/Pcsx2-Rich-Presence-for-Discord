@@ -1,6 +1,9 @@
 # Discord Rich Presence
 pypresence>=4.3.0
 
+# System tray icon (Windows/Linux/macOS)
+pystray>=0.19.0
+
 # System / process monitoring
 psutil>=5.9.0
 pywin32>=306; sys_platform == "win32"
