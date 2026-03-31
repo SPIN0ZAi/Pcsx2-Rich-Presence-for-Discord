@@ -91,7 +91,7 @@ def run_launcher() -> None:
         tray.run_detached()
 
         logger.info("Starting async service...")
-        asyncio.run(_async_main())
+        asyncio.run(_async_main(final_cfg))
 
     except KeyboardInterrupt:
         logger.info("Interrupted by user")

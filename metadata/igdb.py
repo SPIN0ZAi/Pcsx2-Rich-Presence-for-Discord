@@ -99,9 +99,10 @@ class IGDBClient:
             return None
 
         # First try: search external_games table (most accurate)
-        result = await self._search_by_external_serial(serial)
-        if result:
-            return result
+        if not serial.startswith("UNKNOWN"):
+            result = await self._search_by_external_serial(serial)
+            if result:
+                return result
 
         # Second try: title keyword search restricted to PS2
         if title_hint:

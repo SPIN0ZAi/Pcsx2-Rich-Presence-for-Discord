@@ -31,19 +31,18 @@ class WindowInfo:
 
 # Matches:  "... | God of War II [SCES-55474] | 60 FPS"
 _FULL_RE = re.compile(
-    r"\|\s*(?P<title>.+?)\s*\[(?P<serial>[A-Z]{2,4}[-_]\d{3,5}(?:\.\d{1,2})?)\]"
-    r"(?:\s*\|\s*(?P<fps>\d+)\s*FPS)?",
+    r"\|\s*(?P<title>[^|]+?)\s*\[(?P<serial>[A-Z]{2,4}[-_ ]?\d{3,5}(?:\.\d{1,2})?)\]",
     re.IGNORECASE,
 )
 
 # Broader fallback — just extract a serial anywhere in the title
 _SERIAL_RE = re.compile(
-    r"\b(?P<serial>[A-Z]{2,4}[-_]\d{3,5}(?:\.\d{1,2})?)\b",
+    r"\[(?P<serial>[A-Z]{2,4}[-_ ]?\d{3,5}(?:\.\d{1,2})?)\]",
     re.IGNORECASE,
 )
 
 
-def _get_pcsx2_window_title_windows() -> str | None:
+def _get_pcsx2_window_title_windows(pid: int | None = None) -> str | None:
     """Use Win32 API to find and read the PCSX2 window title."""
     try:
         found_titles: list[str] = []
@@ -55,28 +54,50 @@ def _get_pcsx2_window_title_windows() -> str | None:
         )
 
         def callback(hwnd: int, _: int) -> bool:
+            if pid is not None:
+                window_pid = ctypes.wintypes.DWORD()
+                ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
+                if window_pid.value != pid:
+                    return True
+
             buf = ctypes.create_unicode_buffer(512)
             ctypes.windll.user32.GetWindowTextW(hwnd, buf, 512)
             title = buf.value
-            if title and "pcsx2" in title.lower():
-                found_titles.append(title)
+            
+            if title and (pid is not None or "pcsx2" in title.lower()):
+                # Filter out standard noise windows from Qt/Windows
+                noise = ["_q_titlebar", "msctfime ui", "default ime", "nvogldc invisible", "__wgldummywindowfodder", "diemwin"]
+                if title.lower() not in noise:
+                    found_titles.append(title)
             return True
 
         ctypes.windll.user32.EnumWindows(EnumWindowsProc(callback), 0)
         if found_titles:
-            logger.debug("PCSX2 window title: {}", found_titles[0])
+            # Sort so titles with '[' (which holds the serial) are processed first
+            found_titles.sort(key=lambda t: 1 if "[" in t and "]" in t else 0, reverse=True)
+            logger.info("PCSX2 window titles found for PID {}: {}", pid, found_titles)
+            
+            # Find the best title (prefer anything that isn't just the generic emulator menu)
+            for title in found_titles:
+                if "pcsx2" not in title.lower():
+                    return title
             return found_titles[0]
     except Exception as exc:  # noqa: BLE001
         logger.debug("Win32 window enumeration failed: {}", exc)
     return None
 
 
-def _get_pcsx2_window_title_linux() -> str | None:
+def _get_pcsx2_window_title_linux(pid: int | None = None) -> str | None:
     """Use xdotool (subprocess) to find PCSX2 window title on Linux."""
     import subprocess
     try:
+        if pid is not None:
+            cmd = ["xdotool", "search", "--pid", str(pid), "--sync", "--onlyvisible"]
+        else:
+            cmd = ["xdotool", "search", "--name", "pcsx2", "--sync", "--onlyvisible"]
+            
         result = subprocess.run(
-            ["xdotool", "search", "--name", "pcsx2", "--sync", "--onlyvisible"],
+            cmd,
             capture_output=True, text=True, timeout=2,
         )
         if result.returncode != 0 or not result.stdout.strip():
@@ -95,11 +116,11 @@ def _get_pcsx2_window_title_linux() -> str | None:
     return None
 
 
-def get_pcsx2_window_title() -> str | None:
+def get_pcsx2_window_title(pid: int | None = None) -> str | None:
     """Platform-agnostic call to fetch the PCSX2 window title."""
     if sys.platform == "win32":
-        return _get_pcsx2_window_title_windows()
-    return _get_pcsx2_window_title_linux()
+        return _get_pcsx2_window_title_windows(pid)
+    return _get_pcsx2_window_title_linux(pid)
 
 
 def parse_window_title(title: str) -> WindowInfo:
@@ -125,15 +146,19 @@ def parse_window_title(title: str) -> WindowInfo:
             fps=None,
         )
 
+    # Ultimate Fallback: The window title itself might just be the game name (e.g. PCSX2 v2.7 removes 'pcsx2' and serials)
+    if "pcsx2" not in title.lower() and "settings" not in title.lower():
+        return WindowInfo(raw_title=title, serial=None, game_title=title.strip(), fps=None)
+
     return WindowInfo(raw_title=title, serial=None, game_title=None, fps=None)
 
 
-def detect_from_window() -> WindowInfo | None:
+def detect_from_window(pid: int | None = None) -> WindowInfo | None:
     """
     Attempt to read the PCSX2 window title and parse it.
     Returns None if PCSX2 is not running or no window found.
     """
-    title = get_pcsx2_window_title()
+    title = get_pcsx2_window_title(pid)
     if not title:
         return None
     return parse_window_title(title)

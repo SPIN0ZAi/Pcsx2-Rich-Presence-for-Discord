@@ -21,7 +21,7 @@ def find_pcsx2_process(name_fragment: str = "pcsx2") -> psutil.Process | None:
         for proc in psutil.process_iter(["pid", "name", "status"]):
             try:
                 proc_name = (proc.info["name"] or "").lower()
-                if fragment in proc_name:
+                if fragment in proc_name and "rpc" not in proc_name:
                     logger.debug("Found PCSX2 process: {} (pid={})", proc.info["name"], proc.pid)
                     return proc
             except (psutil.NoSuchProcess, psutil.AccessDenied):

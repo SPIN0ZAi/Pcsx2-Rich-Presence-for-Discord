@@ -18,7 +18,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from detection.log_parser import LogParser, LogState
-from detection.process_monitor import is_pcsx2_running
+from detection.process_monitor import find_pcsx2_process
 from detection.window_title import detect_from_window
 from utils.logger import logger
 
@@ -103,42 +103,46 @@ class Detector:
 
     def _synthesise_state(self, log_state: LogState) -> GameState:
         """Turn a LogState + process liveness into a GameState."""
-        alive = is_pcsx2_running(self._process_name)
+        proc = find_pcsx2_process(self._process_name)
 
-        if not alive:
+        if not proc:
             return GameState(state=PCSX2State.STOPPED)
 
-        if not log_state.serial and not log_state.booting:
-            # Running but no disc — try window title as backup
-            win = detect_from_window()
-            if win and win.serial:
-                log_state.serial = win.serial
-                if win.game_title and not log_state.game_title:
-                    log_state.game_title = win.game_title
+        # We must not mutate the underlying log_parser state! Default to its values.
+        serial = log_state.serial
+        game_title = log_state.game_title
 
-        if not log_state.serial:
+        if not serial and not log_state.booting:
+            # Running but no disc — try window title as backup
+            win = detect_from_window(proc.pid)
+            if win and (win.serial or win.game_title):
+                serial = win.serial or "UNKNOWN"
+                if win.game_title and not game_title:
+                    game_title = win.game_title
+
+        if not serial:
             return GameState(state=PCSX2State.IDLE)
 
-        if log_state.booting and not log_state.game_title:
+        if log_state.booting and not game_title:
             return GameState(
                 state=PCSX2State.BOOTING,
-                serial=log_state.serial,
-                game_title=log_state.game_title,
+                serial=serial,
+                game_title=game_title,
                 session_start=self._session_start,
             )
 
         if log_state.paused:
             return GameState(
                 state=PCSX2State.PAUSED,
-                serial=log_state.serial,
-                game_title=log_state.game_title,
+                serial=serial,
+                game_title=game_title,
                 session_start=self._session_start,
             )
 
         return GameState(
             state=PCSX2State.PLAYING,
-            serial=log_state.serial,
-            game_title=log_state.game_title,
+            serial=serial,
+            game_title=game_title,
             session_start=self._session_start,
         )
 

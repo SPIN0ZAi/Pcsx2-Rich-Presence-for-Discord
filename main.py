@@ -84,7 +84,7 @@ class PCSX2RichPresenceService:
         self._discord = DiscordRPCClient(config.discord.client_id)
         self._builder = PresenceBuilder(config.presence)
 
-        self._last_serial: str | None = None
+        self._last_game_id: tuple[str | None, str | None] | None = None
         self._current_info: GameInfo | None = None
         self._stopped_at: float | None = None
 
@@ -145,7 +145,7 @@ class PCSX2RichPresenceService:
                 if self._builder._last_payload is not None:
                     await self._discord.clear()
                     self._builder.force_clear()
-                    self._last_serial = None
+                    self._last_game_id = None
                     self._current_info = None
                     logger.info("Presence cleared (PCSX2 has been closed)")
             return
@@ -154,27 +154,42 @@ class PCSX2RichPresenceService:
         self._stopped_at = None
 
         # ── Fetch metadata if game changed ────────────────────────────────────
-        if game_state.serial and game_state.serial != self._last_serial:
-            self._last_serial = game_state.serial
-            logger.info("Game changed → fetching metadata for {}", game_state.serial)
-            try:
-                self._current_info = await self._metadata.get(
-                    game_state.serial, game_state.game_title
-                )
-                logger.info(
-                    "Metadata: {} / {} / {} (source: {})",
-                    self._current_info.serial,
-                    self._current_info.title,
-                    self._current_info.cover_url or "no cover",
-                    self._current_info.source,
-                )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Metadata fetch failed: {}", exc)
+        current_id = (game_state.serial, game_state.game_title)
+        if current_id != self._last_game_id:
+            self._last_game_id = current_id
+            
+            if game_state.serial is None:
+                logger.debug("Returned to BIOS — clearing game metadata")
                 self._current_info = None
+            else:
+                logger.info("Game changed → fetching metadata for {} ({})", game_state.serial, game_state.game_title)
+                try:
+                    self._current_info = await self._metadata.get(
+                        game_state.serial, game_state.game_title
+                    )
+                    logger.info(
+                        "Metadata: {} / {} / {} (source: {})",
+                        self._current_info.serial,
+                        self._current_info.title,
+                        self._current_info.cover_url or "no cover",
+                        self._current_info.source,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Metadata fetch failed: {}", exc)
+                    self._current_info = None
 
         # ── Build + send presence payload ─────────────────────────────────────
+        old_payload = self._builder._last_payload
+        old_had_image = old_payload is not None and old_payload.large_image is not None
+
         payload = self._builder.build(game_state, self._current_info)
         if payload:
+            # If we transition to a state with no image (e.g. BIOS), Discord caches the
+            # old image unless we completely obliterate the activity first.
+            if old_had_image and payload.large_image is None:
+                logger.debug("Clearing Discord presence cache for BIOS transition")
+                await self._discord.clear()
+            
             kwargs = payload.to_kwargs()
             logger.debug("Sending presence: {}", kwargs)
             await self._discord.update(**kwargs)
@@ -204,12 +219,12 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def _async_main() -> None:
+async def _async_main(config_override: AppConfig | None = None) -> None:
     global _shutdown_event
     _shutdown_event = asyncio.Event()
 
     args = _parse_args()
-    config = init_config(args.config)
+    config = config_override if config_override else init_config(args.config)
 
     log_level = "DEBUG" if args.debug else config.logging.level
     setup_logging(

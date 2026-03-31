@@ -65,6 +65,14 @@ def _default_log_path() -> Path | None:
             home / "snap" / "pcsx2" / "current" / ".config" / "PCSX2" / "logs" / "emulog.txt",
         ]
 
+    # Add portable directory checks
+    cwd = Path.cwd()
+    candidates.extend([
+        cwd / "logs" / "emulog.txt",
+        cwd / "emulog.txt",
+        cwd.parent / "logs" / "emulog.txt"
+    ])
+
     for p in candidates:
         if p.exists():
             logger.debug("Found emulog at: {}", p)

@@ -24,14 +24,15 @@ def setup_logging(level: str = "INFO", file_enabled: bool = True, rotation_mb: i
         "<cyan>{name}</cyan>:<cyan>{line}</cyan> — "
         "<level>{message}</level>"
     )
-    logger.add(
-        sys.stderr,
-        format=fmt_console,
-        level=level,
-        colorize=True,
-        backtrace=True,
-        diagnose=True,
-    )
+    if sys.stderr is not None:
+        logger.add(
+            sys.stderr,
+            format=fmt_console,
+            level=level,
+            colorize=True,
+            backtrace=True,
+            diagnose=True,
+        )
 
     # File: structured, rotated
     if file_enabled:

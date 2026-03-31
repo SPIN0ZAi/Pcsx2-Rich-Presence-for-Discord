@@ -94,6 +94,13 @@ class MetadataManager:
         """
         serial = normalise_serial(raw_serial) or raw_serial.upper()
 
+        if serial == "UNKNOWN" and title_hint:
+            import hashlib
+            # Create a deterministic synthetic serial for title-only lookups
+            # This prevents all title-only games from sharing the literal "UNKNOWN" cache key
+            h = hashlib.md5(title_hint.lower().strip().encode("utf-8")).hexdigest()[:8]
+            serial = f"UNKNOWN-{h.upper()}"
+
         # ── 1. Cache hit (fresh) ──────────────────────────────────────────────
         cached = await self._cache.get(serial)
         if cached:
@@ -143,7 +150,7 @@ class MetadataManager:
             logger.warning("MetadataManager: IGDB failed for {}: {}", serial, exc)
 
         # ── ScreenScraper ─────────────────────────────────────────────────────
-        if not info:
+        if not info and not serial.startswith("UNKNOWN"):
             try:
                 sg = await self._scraper.search_by_serial(serial)
                 if sg:
@@ -162,7 +169,7 @@ class MetadataManager:
                 logger.warning("MetadataManager: ScreenScraper failed for {}: {}", serial, exc)
 
         # ── GameTDB ───────────────────────────────────────────────────────────
-        if not info:
+        if not info and not serial.startswith("UNKNOWN"):
             entry = self._gametdb.lookup(serial)
             if entry:
                 logger.info("MetadataManager: GameTDB match for {} → {}", serial, entry.title)

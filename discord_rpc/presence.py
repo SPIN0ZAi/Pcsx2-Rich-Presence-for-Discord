@@ -22,15 +22,15 @@ from utils.logger import logger
 _PS2_SMALL_IMAGE = "ps2_logo"
 _PS2_SMALL_TEXT = "PlayStation 2"
 
-# Default large image when no cover is found — a PS2 themed asset
-_DEFAULT_LARGE_IMAGE = "ps2_default"
-_DEFAULT_LARGE_TEXT = "PlayStation 2"
+# Default large image when no cover is found
+_DEFAULT_LARGE_IMAGE = None
+_DEFAULT_LARGE_TEXT = None
 
 # State strings
 _STATE_PLAYING = "In Game"
 _STATE_PAUSED = "Paused"
 _STATE_BOOTING = "Loading..."
-_STATE_BIOS = "At BIOS"
+_STATE_BIOS = "Idle"
 _STATE_IDLE = "Idle"
 
 
@@ -137,7 +137,7 @@ class PresenceBuilder:
         else:
             title = (game_info.title if game_info else None) or game_state.display_title
             if game_state.state == PCSX2State.IDLE:
-                details = "In the PS2 BIOS"
+                details = "In the Main Menu"
             else:
                 details = f"Playing {title}"
 
