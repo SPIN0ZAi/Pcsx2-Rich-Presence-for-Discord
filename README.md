@@ -6,13 +6,13 @@
 
 A feature-rich, standalone Discord Rich Presence (RPC) service for the PCSX2 emulator. Designed for modern **PCSX2-Qt** builds and engineered to provide a premium, automated experience that goes far beyond the built-in emulator features.
 
-## 📸 Previews
+##  Previews
 
 | Playing a Game | Idle / Main Menu |
 | :---: | :---: |
 | ![Playing Game](assets/preview_game.png) | ![Idle State](assets/preview_idle.png) |
 
-## 🚀 Key Features
+##  Key Features
 
 *   **Automated Cover Art**: Automatically fetches high-quality game covers from **IGDB** based on game title or serial.
 *   **Deep Metadata**: Displays game release years and adds "View on IGDB" buttons directly to your Discord profile.
@@ -21,7 +21,7 @@ A feature-rich, standalone Discord Rich Presence (RPC) service for the PCSX2 emu
 *   **Smart "Idle" Detection**: Cleanly transitions to "In the Main Menu" when you return to the emulator, instead of freezing on the last played game.
 *   **Offline Fallback**: Supports local XML databases (GameTDB) if you prefer to stay offline.
 
-## 🆚 Why use this over the built-in PCSX2 Presence?
+##  Why use this over the built-in PCSX2 Presence?
 
 | Feature | Built-in PCSX2 RPC | This Tool |
 | :--- | :---: | :---: |
@@ -31,7 +31,7 @@ A feature-rich, standalone Discord Rich Presence (RPC) service for the PCSX2 emu
 | **Customization** | Hardcoded | **Full YAML/JSON Config** |
 | **Qt Support** | Basic | **Engineered for modern builds** |
 
-## 🛠️ Installation & Setup
+##  Installation & Setup
 
 ### 1. Requirements
 *   **Discord Desktop Client** (running)
@@ -47,7 +47,7 @@ On the first run, a setup wizard will appear to help you configure your:
 *   **Discord Application ID** (Create one at [Discord Developers](https://discord.com/developers/applications))
 *   **IGDB API Keys** (Optional but highly recommended for cover art)
 
-## ⚙️ Advanced Configuration
+##  Advanced Configuration
 
 Edit `config.yaml` to customize your experience:
 ```yaml
@@ -58,12 +58,12 @@ presence:
   custom_details: null        # Override "Playing <Game>" text
 ```
 
-## 🏗️ Development
+##  Development
 
 If you want to run from source:
 1.  Clone the repo: `git clone https://github.com/SPIN0ZAi/Pcsx2-Rich-Presence-for-Discord.git`
 2.  Install dependencies: `pip install -r requirements.txt`
 3.  Run: `python main.py`
 
-## 📄 License
+##  License
 MIT License. Feel free to fork and improve!
