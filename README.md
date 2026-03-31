@@ -1,8 +1,16 @@
 # PCSX2 Discord Rich Presence (Advanced)
 
+<p align="center">
+  <img src="assets/logo.png" width="200" alt="PCSX2 RPC Logo">
+</p>
+
 A feature-rich, standalone Discord Rich Presence (RPC) service for the PCSX2 emulator. Designed for modern **PCSX2-Qt** builds and engineered to provide a premium, automated experience that goes far beyond the built-in emulator features.
 
-![Discord Presence Preview](https://github.com/SPIN0ZAi/Pcsx2-Rich-Presence-for-Discord/raw/main/assets/preview.png)
+## 📸 Previews
+
+| Playing a Game | Idle / Main Menu |
+| :---: | :---: |
+| ![Playing Game](assets/preview_game.png) | ![Idle State](assets/preview_idle.png) |
 
 ## 🚀 Key Features
 
