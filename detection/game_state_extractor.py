@@ -35,6 +35,14 @@ class GameStateExtractor:
         "compiling shaders",
         "loading",
     }
+    _RPCS3_MENU_TOKENS = (
+        "game list",
+        "settings",
+        "home",
+        "welcome",
+        "firmware",
+        "debugger",
+    )
     _PCSX2_NOISE = {
         "pcsx2",
         "pcsx2 qt",
@@ -93,6 +101,10 @@ class GameStateExtractor:
         # Example:
         # "RPCS3 v0.0.31-... | Persona 5 [BLUS31604] | Vulkan | 60.00 FPS"
         serial = self._extract_serial(title)
+        lower_title = title.lower()
+        if self._looks_like_rpcs3_menu(lower_title):
+            return None, None
+
         parts = [p.strip() for p in title.split("|") if p.strip()]
         for part in parts:
             lower = part.lower()
@@ -106,15 +118,16 @@ class GameStateExtractor:
                 continue
             cleaned = self._strip_serial(part).strip("- ")
             if cleaned and not self._looks_like_rpcs3_version(cleaned):
-                return cleaned, serial
+                return (cleaned, serial) if serial else (None, None)
         cleaned = self._strip_serial(title)
         if (
             cleaned
             and "rpcs3" not in cleaned.lower()
+            and not self._looks_like_rpcs3_menu(cleaned)
             and not self._looks_like_rpcs3_version(cleaned)
         ):
             return (cleaned.strip(), serial) if serial else (None, None)
-        return None, serial
+        return None, None
 
     def _parse_duckstation(self, title: str) -> tuple[str | None, str | None]:
         # Examples:
@@ -159,6 +172,10 @@ class GameStateExtractor:
         if token.startswith("0.") and any(ch.isdigit() for ch in token):
             return True
         return False
+
+    def _looks_like_rpcs3_menu(self, text: str) -> bool:
+        token = text.strip().lower()
+        return any(marker in token for marker in self._RPCS3_MENU_TOKENS)
 
     def _looks_like_pcsx2_ui_text(self, text: str) -> bool:
         token = text.strip().lower()
