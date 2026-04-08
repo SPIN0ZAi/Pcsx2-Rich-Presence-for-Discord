@@ -4,7 +4,7 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "pcsx2-rpc"
-version = "1.0.0"
+version = "1.0.1"
 description = "Unified Discord Rich Presence for PCSX2, RPCS3, and DuckStation"
 authors = [{ name = "PCSX2 RPC Contributors" }]
 readme = "README.md"
