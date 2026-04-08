@@ -15,6 +15,7 @@ class ExtractedGameState:
     serial: str | None
     process_start: float
     raw_title: str
+    paused: bool
 
 
 class GameStateExtractor:
@@ -64,6 +65,7 @@ class GameStateExtractor:
             serial=serial,
             process_start=proc.create_time,
             raw_title=title,
+            paused=self._is_paused_title(title),
         )
 
     def _parse_pcsx2(self, title: str) -> tuple[str | None, str | None]:
@@ -170,3 +172,10 @@ class GameStateExtractor:
         if re.match(r"^v?\d+\.\d+(?:\.\d+)?(?:[-\.][0-9a-z]+)*$", token, re.IGNORECASE):
             return True
         return False
+
+    def _is_paused_title(self, title: str) -> bool:
+        lower = title.lower()
+        if "resume" in lower or "resumed" in lower:
+            return False
+        paused_tokens = (" paused", "pause]", "pause)", "[paused", "(paused")
+        return any(tok in lower for tok in paused_tokens)

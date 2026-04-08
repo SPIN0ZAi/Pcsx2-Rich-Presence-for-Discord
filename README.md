@@ -14,6 +14,9 @@ EmuPresence runs quietly in the system tray, detects the active emulator automat
 - Parses emulator window titles to identify games
 - Fetches cover art through IGDB when available
 - Falls back to an emulator icon when no game is running
+- Supports minimal/detailed display styles
+- Supports menu and paused state indicators
+- Supports optional action buttons (IGDB + emulator website)
 - Clears Discord presence shortly after the emulator closes
 - Ships as a portable Windows `.exe`
 - Uses a simple first-run/settings window instead of editing config files

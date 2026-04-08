@@ -16,6 +16,12 @@ EMULATOR_FALLBACK_IMAGES: dict[str, str] = {
 
 DEFAULT_IDLE_IMAGE_KEY = "emu_presence_idle"
 
+EMULATOR_URLS: dict[str, str] = {
+    "pcsx2": "https://pcsx2.net/",
+    "rpcs3": "https://rpcs3.net/",
+    "duckstation": "https://www.duckstation.org/",
+}
+
 
 @dataclass(frozen=True)
 class UnifiedPresencePayload:
@@ -69,8 +75,7 @@ class UnifiedPresenceBuilder:
         game_title = (info.title if info else None) or state.title
         cover = (info.cover_url if info else None) or EMULATOR_FALLBACK_IMAGES.get(state.emulator_key)
         is_menu = game_title is None and state.serial is None
-        raw = (state.raw_title or "").lower()
-        is_paused = bool(options.show_paused_state and ("paused" in raw or "pause" in raw))
+        is_paused = bool(options.show_paused_state and state.paused)
 
         if is_menu:
             state_line = "In menu" if options.show_menu_state else "No game detected"
@@ -98,8 +103,12 @@ class UnifiedPresenceBuilder:
             details_line = state.emulator_name
 
         buttons: list[dict[str, str]] = []
-        if options.show_buttons and info and info.igdb_url:
-            buttons.append({"label": "View on IGDB", "url": info.igdb_url})
+        if options.show_buttons:
+            if info and info.igdb_url:
+                buttons.append({"label": "View on IGDB", "url": info.igdb_url})
+            emu_url = EMULATOR_URLS.get(state.emulator_key)
+            if emu_url:
+                buttons.append({"label": f"{state.emulator_name} Website", "url": emu_url})
             buttons = buttons[:2]
 
         payload = UnifiedPresencePayload(
