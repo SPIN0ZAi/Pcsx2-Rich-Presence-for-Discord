@@ -51,6 +51,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "show_paused_state": True,
         "show_buttons": True,
         "show_elapsed_time": True,
+        "log_window_titles": False,
     },
 }
 

@@ -121,6 +121,13 @@ class SettingsWindow(tk.Tk):
             variable=self.elapsed_var,
         ).grid(row=7, column=0, columnspan=2, sticky=tk.W, pady=4)
 
+        self.log_titles_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            appf,
+            text="Diagnostics: log raw emulator window titles",
+            variable=self.log_titles_var,
+        ).grid(row=8, column=0, columnspan=2, sticky=tk.W, pady=4)
+
         ttk.Label(
             main,
             text="Changes apply after restarting EmuPresence.",
@@ -143,6 +150,7 @@ class SettingsWindow(tk.Tk):
         self.paused_state_var.set(bool(app.get("show_paused_state", True)))
         self.buttons_var.set(bool(app.get("show_buttons", True)))
         self.elapsed_var.set(bool(app.get("show_elapsed_time", True)))
+        self.log_titles_var.set(bool(app.get("log_window_titles", False)))
 
     def _save(self) -> None:
         try:
@@ -170,6 +178,7 @@ class SettingsWindow(tk.Tk):
                 "show_paused_state": bool(self.paused_state_var.get()),
                 "show_buttons": bool(self.buttons_var.get()),
                 "show_elapsed_time": bool(self.elapsed_var.get()),
+                "log_window_titles": bool(self.log_titles_var.get()),
             },
         }
 

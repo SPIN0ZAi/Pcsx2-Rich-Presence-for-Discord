@@ -43,6 +43,7 @@ class AppRuntimeConfig:
     show_paused_state: bool = True
     show_buttons: bool = True
     show_elapsed_time: bool = True
+    log_window_titles: bool = False
 
 
 class MainApp:
@@ -113,6 +114,13 @@ class MainApp:
         self._stopped_at = None
         self._active_pid = active.pid
         extracted = self._extractor.extract(active)
+        if self._cfg.log_window_titles:
+            logger.debug(
+                "Window title [{}:{}]: {}",
+                extracted.emulator_name,
+                extracted.pid,
+                extracted.raw_title or "<empty>",
+            )
 
         current_identity = (
             extracted.emulator_key,
@@ -248,6 +256,7 @@ def _load_runtime_config() -> AppRuntimeConfig:
         show_paused_state=bool(cfg.get("app", {}).get("show_paused_state", True)),
         show_buttons=bool(cfg.get("app", {}).get("show_buttons", True)),
         show_elapsed_time=bool(cfg.get("app", {}).get("show_elapsed_time", True)),
+        log_window_titles=bool(cfg.get("app", {}).get("log_window_titles", False)),
     )
 
 
