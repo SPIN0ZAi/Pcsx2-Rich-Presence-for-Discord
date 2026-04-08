@@ -11,10 +11,14 @@ from __future__ import annotations
 import sys
 import ctypes
 import ctypes.wintypes
+import re
 from dataclasses import dataclass
 
 import psutil
 from utils.logger import logger
+
+
+_SERIAL_HINT_RE = re.compile(r"\[[A-Z0-9_-]{6,}\]", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,28 +40,67 @@ EMULATOR_PROCESS_NAMES: dict[str, tuple[str, str, tuple[str, ...]]] = {
 
 
 def _get_window_title_by_pid_windows(pid: int) -> str | None:
+    candidates: list[tuple[str, int]] = []
+
+    def _score(title: str, is_foreground: bool) -> int:
+        lower = title.lower().strip()
+        score = 0
+        if is_foreground:
+            score += 100
+        if _SERIAL_HINT_RE.search(title):
+            score += 60
+        if "|" in title:
+            score += 20
+        if "rpcs3" in lower or "duckstation" in lower or "pcsx2" in lower:
+            score -= 10
+        if lower in {"rpcs3", "pcsx2", "duckstation"}:
+            score -= 50
+        score += min(len(title), 80) // 4
+        return score
+
+    foreground_hwnd = 0
     try:
-        hwnd = ctypes.windll.user32.GetForegroundWindow()
-        if not hwnd:
-            return None
+        foreground_hwnd = ctypes.windll.user32.GetForegroundWindow()
 
-        window_pid = ctypes.wintypes.DWORD()
-        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
-        if window_pid.value != pid:
-            return None
+        EnumWindowsProc = ctypes.WINFUNCTYPE(
+            ctypes.c_bool,
+            ctypes.wintypes.HWND,
+            ctypes.wintypes.LPARAM,
+        )
 
-        length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
-        if length <= 0:
-            return None
+        def callback(hwnd: int, _: int) -> bool:
+            if not ctypes.windll.user32.IsWindowVisible(hwnd):
+                return True
 
-        buf = ctypes.create_unicode_buffer(length + 1)
-        ctypes.windll.user32.GetWindowTextW(hwnd, buf, len(buf))
-        title = buf.value.strip()
-        if title:
-            return title
+            window_pid = ctypes.wintypes.DWORD()
+            ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
+            if window_pid.value != pid:
+                return True
+
+            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+            if length <= 0:
+                return True
+
+            buf = ctypes.create_unicode_buffer(length + 1)
+            ctypes.windll.user32.GetWindowTextW(hwnd, buf, len(buf))
+            title = buf.value.strip()
+            if not title:
+                return True
+
+            candidates.append((title, _score(title, hwnd == foreground_hwnd)))
+            return True
+
+        ctypes.windll.user32.EnumWindows(EnumWindowsProc(callback), 0)
     except Exception:
         return None
-    return None
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: item[1], reverse=True)
+    selected = candidates[0][0]
+    logger.debug("Selected window title for pid {}: {}", pid, selected)
+    return selected
 
 
 def _is_pid_foreground_windows(pid: int) -> bool:
