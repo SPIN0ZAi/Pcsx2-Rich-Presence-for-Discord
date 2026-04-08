@@ -78,7 +78,7 @@ class UnifiedPresenceBuilder:
         is_paused = bool(options.show_paused_state and state.paused)
 
         if is_menu:
-            state_line = "In menu" if options.show_menu_state else "No game detected"
+            state_line = self._menu_state_text(state) if options.show_menu_state else "No game detected"
             large_text = state.emulator_name
         elif is_paused:
             paused_target = game_title or state.serial or "Game"
@@ -125,3 +125,27 @@ class UnifiedPresenceBuilder:
 
         self._last_payload = payload
         return payload
+
+    def _menu_state_text(self, state: ExtractedGameState) -> str:
+        raw = (state.raw_title or "").lower()
+
+        if state.emulator_key == "rpcs3":
+            if "game list" in raw:
+                return "At RPCS3 game list"
+            if "settings" in raw:
+                return "In RPCS3 settings"
+            return "In RPCS3 menu"
+
+        if state.emulator_key == "duckstation":
+            if "settings" in raw:
+                return "In DuckStation settings"
+            if "game list" in raw:
+                return "At DuckStation game list"
+            return "In DuckStation menu"
+
+        if state.emulator_key == "pcsx2":
+            if "bios" in raw:
+                return "In PCSX2 BIOS"
+            return "In PCSX2 menu"
+
+        return "In menu"

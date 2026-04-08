@@ -175,7 +175,18 @@ class GameStateExtractor:
 
     def _is_paused_title(self, title: str) -> bool:
         lower = title.lower()
-        if "resume" in lower or "resumed" in lower:
+        if "resume" in lower or "resumed" in lower or "unpaused" in lower:
             return False
-        paused_tokens = (" paused", "pause]", "pause)", "[paused", "(paused")
+        paused_tokens = (
+            " paused",
+            "pause]",
+            "pause)",
+            "[paused",
+            "(paused",
+            "emu paused",
+            "emulation paused",
+            "game paused",
+        )
+        if "not paused" in lower:
+            return False
         return any(tok in lower for tok in paused_tokens)
