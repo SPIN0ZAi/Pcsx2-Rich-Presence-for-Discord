@@ -1,69 +1,79 @@
-# PCSX2 Discord Rich Presence (Advanced)
+# EmuPresence
 
-<p align="center">
-  <img src="assets/logo.png" width="200" alt="PCSX2 RPC Logo">
-</p>
+Unified Discord Rich Presence for Windows emulators:
 
-A feature-rich, standalone Discord Rich Presence (RPC) service for the PCSX2 emulator. Designed for modern **PCSX2-Qt** builds and engineered to provide a premium, automated experience that goes far beyond the built-in emulator features.
+- PCSX2
+- RPCS3
+- DuckStation
 
-##  Previews
+EmuPresence runs quietly in the system tray, detects the active emulator automatically, and updates Discord Rich Presence with game art and state.
 
-| Playing a Game | Idle / Main Menu |
-| :---: | :---: |
-| ![Playing Game](assets/preview_game.png) | ![Idle State](assets/preview_idle.png) |
+## Features
 
-##  Key Features
+- Auto-detects supported emulator processes
+- Parses emulator window titles to identify games
+- Fetches cover art through IGDB when available
+- Falls back to an emulator icon when no game is running
+- Clears Discord presence shortly after the emulator closes
+- Ships as a portable Windows `.exe`
+- Uses a simple first-run/settings window instead of editing config files
 
-*   **Automated Cover Art**: Automatically fetches high-quality game covers from **IGDB** based on game title or serial.
-*   **Deep Metadata**: Displays game release years and adds "View on IGDB" buttons directly to your Discord profile.
-*   **Modern Qt Engine**: Specifically built to handle modern PCSX2-Qt versions that lack traditional log-based serial reporting.
-*   **Compound State Tracking**: Zero-stale updates. Unlike other tools, this accurately detects game swaps even when serials are missing (e.g., transitioning between two "Unknown" titles).
-*   **Smart "Idle" Detection**: Cleanly transitions to "In the Main Menu" when you return to the emulator, instead of freezing on the last played game.
-*   **Offline Fallback**: Supports local XML databases (GameTDB) if you prefer to stay offline.
+## How it works
 
-##  Why use this over the built-in PCSX2 Presence?
+1. Launch `EmuPresence.exe`
+2. Enter optional metadata settings in the first-run window
+3. Keep the app running in the tray
+4. Launch PCSX2, RPCS3, or DuckStation
+5. Discord updates automatically
 
-| Feature | Built-in PCSX2 RPC | This Tool |
-| :--- | :---: | :---: |
-| **Cover Art** | Manual / Static | **Fully Automatic (IGDB)** |
-| **Game Details** | Minimal (Title only) | **Detailed (Year, IGDB Link, etc.)** |
-| **Reliability** | Can freeze on game swap | **Compound (Serial + Title) tracking** |
-| **Customization** | Hardcoded | **Full YAML/JSON Config** |
-| **Qt Support** | Basic | **Engineered for modern builds** |
+When no game is running, EmuPresence shows the emulator context instead of stale game metadata.
 
-##  Installation & Setup
+## Settings
 
-### 1. Requirements
-*   **Discord Desktop Client** (running)
-*   **PCSX2** (Qt or regular builds)
+The tray menu includes a Settings option that opens a GUI window where you can edit:
 
-### 2. Quick Start (Releases)
-1.  Download the latest [Releas Zip](https://github.com/SPIN0ZAi/Pcsx2-Rich-Presence-for-Discord/releases).
-2.  Extract it into your PCSX2 folder (or anywhere you like).
-3.  Run `Launch-PCSX2.bat` (this will launch BOTH the presence tool and the emulator).
+- Poll interval
+- Presence clear delay
+- Connection warning toggle
 
-### 3. Configuration
-On the first run, a setup wizard will appear to help you configure your:
-*   **Discord Application ID** (Create one at [Discord Developers](https://discord.com/developers/applications))
-*   **IGDB API Keys** (Optional but highly recommended for cover art)
+The Discord Application Client ID and production backend identity can be locked into the build by the project owner.
 
-##  Advanced Configuration
+## Discord Application
 
-Edit `config.yaml` to customize your experience:
-```yaml
-presence:
-  privacy_mode: false         # Hide game titles if you're shy
-  show_cover_art: true        # Automatic cover art from IGDB
-  show_elapsed_time: true     # Show how long you've been playing
-  custom_details: null        # Override "Playing <Game>" text
+Discord Rich Presence requires a Discord Application Client ID.
+
+For production builds, the developer can embed a single shared client ID in the app so users do not need to create their own Discord application.
+
+Important:
+
+- The Client ID is public and safe to ship in the app
+- Never ship a Discord client secret inside the executable
+- If you want your own branding, create a dedicated Discord application and upload the assets there
+
+## Build
+
+Build a Windows release with:
+
+```powershell
+.\build_release.ps1
 ```
 
-##  Development
+The built executable is placed in:
 
-If you want to run from source:
-1.  Clone the repo: `git clone https://github.com/SPIN0ZAi/Pcsx2-Rich-Presence-for-Discord.git`
-2.  Install dependencies: `pip install -r requirements.txt`
-3.  Run: `python main.py`
+```text
+dist\EmuPresence\EmuPresence.exe
+```
 
-##  License
-MIT License. Feel free to fork and improve!
+## Development
+
+Run from source with:
+
+```powershell
+python main_unified.py
+```
+
+## Notes
+
+- Cover art is best-effort; if IGDB fails, the app still works
+- Menu states use emulator imagery instead of stale game art
+- Advanced memory-based features are not part of the baseline release

@@ -1,10 +1,10 @@
 """
-GUI setup wizard for the standalone executable package.
+GUI setup/settings window for the standalone executable package.
 
-Prompts the user for their Discord App ID and optionally IGDB keys,
-saving them to settings.json in AppData.
+- First run: onboarding flow
+- Tray settings: edit previously saved values
 
-Requires tkinter, which is built into Python.
+Discord application client ID is intentionally not user-editable here.
 """
 from __future__ import annotations
 
@@ -12,14 +12,15 @@ import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from utils.storage import save_settings
+from utils.storage import load_settings, save_settings
 
 
-class SetupWizard(tk.Tk):
-    def __init__(self) -> None:
+class SettingsWindow(tk.Tk):
+    def __init__(self, first_run: bool) -> None:
         super().__init__()
-        self.title("PCSX2 Discord Rich Presence - First Run")
-        self.geometry("500x380")
+        self.first_run = first_run
+        self.title("EmuPresence - Setup" if first_run else "EmuPresence - Settings")
+        self.geometry("560x430")
         self.resizable(False, False)
 
         try:
@@ -36,112 +37,113 @@ class SetupWizard(tk.Tk):
         self.style = ttk.Style(self)
         self.style.theme_use("xpnative" if sys.platform == "win32" else "clam")
 
-        self._build_ui()
         self.success = False
+        self._build_ui()
+        self._load_existing()
 
     def _build_ui(self) -> None:
-        main_frame = ttk.Frame(self, padding="20")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main = ttk.Frame(self, padding="16")
+        main.pack(fill=tk.BOTH, expand=True)
 
-        # Header
+        title = "Welcome to EmuPresence" if self.first_run else "Settings"
+        subtitle = (
+            "This build uses the app's built-in Discord Application ID.\n"
+            "You can configure optional metadata and app behavior below."
+        )
+
+        ttk.Label(main, text=title, font=("Segoe UI", 12, "bold")).pack(anchor=tk.W, pady=(0, 8))
+        ttk.Label(main, text=subtitle, wraplength=520).pack(anchor=tk.W, pady=(0, 14))
+
+        ttk.Label(main, text="Discord Application", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
         ttk.Label(
-            main_frame,
-            text="Welcome to PCSX2 Discord Rich Presence!",
-            font=("Segoe UI", 12, "bold"),
-        ).pack(anchor=tk.W, pady=(0, 10))
-
-        ttk.Label(
-            main_frame,
-            text="To connect to Discord, you need a free Application ID.\n"
-                 "1. Go to discord.com/developers/applications\n"
-                 "2. Create a New Application\n"
-                 "3. Copy the Application ID and paste it below.",
-            wraplength=460,
-        ).pack(anchor=tk.W, pady=(0, 20))
-
-        # Discord ID
-        ttk.Label(main_frame, text="Discord Application ID (Required):", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
-        self.discord_var = tk.StringVar()
-        entry_discord = ttk.Entry(main_frame, textvariable=self.discord_var, width=50)
-        entry_discord.pack(anchor=tk.W, pady=(5, 20))
-        entry_discord.focus()
-
-        # Separator
-        ttk.Separator(main_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(0, 20))
-
-        # Optional: IGDB
-        ttk.Label(
-            main_frame,
-            text="Cover Art / IGDB Integration (Optional):",
-            font=("Segoe UI", 9, "bold"),
-        ).pack(anchor=tk.W)
-        ttk.Label(
-            main_frame,
-            text="Get free keys at dev.twitch.tv/console to show game box art.",
-            font=("Segoe UI", 8),
+            main,
+            text="Managed by this build (not editable).",
             foreground="gray",
-        ).pack(anchor=tk.W, pady=(0, 5))
+        ).pack(anchor=tk.W, pady=(2, 12))
 
-        igdb_frame = ttk.Frame(main_frame)
-        igdb_frame.pack(fill=tk.X, pady=(0, 20))
+        ttk.Separator(main, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(0, 12))
 
-        ttk.Label(igdb_frame, text="Client ID:").grid(row=0, column=0, sticky=tk.W, pady=2)
-        self.igdb_id_var = tk.StringVar()
-        ttk.Entry(igdb_frame, textvariable=self.igdb_id_var, width=40).grid(row=0, column=1, sticky=tk.W, padx=10, pady=2)
+        ttk.Label(main, text="App Behavior", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
+        appf = ttk.Frame(main)
+        appf.pack(fill=tk.X, pady=(6, 14))
 
-        ttk.Label(igdb_frame, text="Client Secret:").grid(row=1, column=0, sticky=tk.W, pady=2)
-        self.igdb_secret_var = tk.StringVar()
-        ttk.Entry(igdb_frame, textvariable=self.igdb_secret_var, width=40, show="*").grid(row=1, column=1, sticky=tk.W, padx=10, pady=2)
+        ttk.Label(appf, text="Poll interval (seconds):").grid(row=0, column=0, sticky=tk.W, pady=4)
+        self.poll_var = tk.StringVar(value="5")
+        ttk.Entry(appf, textvariable=self.poll_var, width=10).grid(row=0, column=1, sticky=tk.W, padx=8)
 
-        # Buttons
-        btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        ttk.Label(appf, text="Clear delay after close (seconds):").grid(row=1, column=0, sticky=tk.W, pady=4)
+        self.clear_var = tk.StringVar(value="15")
+        ttk.Entry(appf, textvariable=self.clear_var, width=10).grid(row=1, column=1, sticky=tk.W, padx=8)
 
-        ttk.Button(btn_frame, text="Save & Start", command=self._save_and_start, default=tk.ACTIVE).pack(side=tk.RIGHT, padx=(10, 0))
-        ttk.Button(btn_frame, text="Quit", command=self.destroy).pack(side=tk.RIGHT)
+        self.notify_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            appf,
+            text="Show one-time Discord connection warning",
+            variable=self.notify_var,
+        ).grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=6)
 
-    def _save_and_start(self) -> None:
-        discord_id = self.discord_var.get().strip()
+        ttk.Label(
+            main,
+            text="Changes apply after restarting EmuPresence.",
+            foreground="gray",
+        ).pack(anchor=tk.W, pady=(2, 10))
 
-        if not discord_id:
-            messagebox.showerror("Error", "Discord Application ID is required.", parent=self)
+        btns = ttk.Frame(main)
+        btns.pack(fill=tk.X, side=tk.BOTTOM)
+        ttk.Button(btns, text="Save", command=self._save, default=tk.ACTIVE).pack(side=tk.RIGHT, padx=(8, 0))
+        ttk.Button(btns, text="Cancel" if self.first_run else "Close", command=self.destroy).pack(side=tk.RIGHT)
+
+    def _load_existing(self) -> None:
+        cfg = load_settings()
+        app = cfg.get("app", {})
+        self.poll_var.set(str(app.get("poll_interval_seconds", 5)))
+        self.clear_var.set(str(app.get("clear_delay_seconds", 15)))
+        self.notify_var.set(bool(app.get("show_notifications", True)))
+
+    def _save(self) -> None:
+        try:
+            poll_interval = int(self.poll_var.get().strip())
+            clear_delay = int(self.clear_var.get().strip())
+        except ValueError:
+            messagebox.showerror("Invalid value", "Poll interval and clear delay must be numbers.", parent=self)
             return
 
-        if not discord_id.isdigit():
-            messagebox.showwarning("Warning", "Discord IDs are usually numbers only. Check if you pasted it correctly.", parent=self)
+        if poll_interval < 1 or poll_interval > 60:
+            messagebox.showerror("Invalid value", "Poll interval must be between 1 and 60.", parent=self)
+            return
 
-        settings = {
-            "discord": {
-                "client_id": discord_id
+        if clear_delay < 0 or clear_delay > 120:
+            messagebox.showerror("Invalid value", "Clear delay must be between 0 and 120.", parent=self)
+            return
+
+        payload: dict[str, dict[str, str | int | bool]] = {
+            "app": {
+                "poll_interval_seconds": poll_interval,
+                "clear_delay_seconds": clear_delay,
+                "show_notifications": bool(self.notify_var.get()),
             },
-            "metadata": {}
         }
 
-        igdb_id = self.igdb_id_var.get().strip()
-        igdb_secret = self.igdb_secret_var.get().strip()
-
-        if igdb_id and igdb_secret:
-            settings["metadata"]["igdb_client_id"] = igdb_id
-            settings["metadata"]["igdb_client_secret"] = igdb_secret
-        elif igdb_id or igdb_secret:
-            messagebox.showwarning(
-                "Missing IGDB Key",
-                "You provided one IGDB key but not the other. Cover art won't work unless both are provided.",
-                parent=self
-            )
-            # We still save it, they can edit it later
-
         try:
-            save_settings(settings)
+            save_settings(payload)
             self.success = True
             self.destroy()
-        except Exception as e:
-            messagebox.showerror("Save Error", f"Failed to save settings: {e}", parent=self)
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror("Save error", f"Failed to save settings:\n{exc}", parent=self)
+
+
+def _run_window(first_run: bool) -> bool:
+    app = SettingsWindow(first_run=first_run)
+    app.eval("tk::PlaceWindow . center")
+    app.mainloop()
+    return app.success
 
 
 def run_wizard() -> bool:
-    """Run the Tkinter setup wizard. Returns True if setup completed successfully."""
-    app = SetupWizard()
-    app.eval('tk::PlaceWindow . center')
-    app.mainloop()
-    return app.success
+    """First-run setup flow."""
+    return _run_window(first_run=True)
+
+
+def run_settings_editor() -> bool:
+    """Tray settings flow."""
+    return _run_window(first_run=False)

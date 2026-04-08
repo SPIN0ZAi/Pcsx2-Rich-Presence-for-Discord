@@ -18,7 +18,11 @@ from utils.retry import retry
 
 _TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 _IGDB_BASE = "https://api.igdb.com/v4"
-_PS2_PLATFORM_ID = 8  # IGDB platform ID for PlayStation 2
+_PLATFORM_IDS = {
+    "pcsx2": 8,        # PlayStation 2
+    "rpcs3": 9,        # PlayStation 3
+    "duckstation": 7,  # PlayStation
+}
 
 
 @dataclass
@@ -87,7 +91,12 @@ class IGDBClient:
             resp.raise_for_status()
             return await resp.json()
 
-    async def search_by_serial(self, serial: str, title_hint: str | None = None) -> IGDBGame | None:
+    async def search_by_serial(
+        self,
+        serial: str,
+        title_hint: str | None = None,
+        emulator_key: str | None = None,
+    ) -> IGDBGame | None:
         """
         Search IGDB for a PS2 game by serial code.
 
@@ -99,14 +108,14 @@ class IGDBClient:
             return None
 
         # First try: search external_games table (most accurate)
-        if not serial.startswith("UNKNOWN"):
+        if serial and not serial.startswith("UNKNOWN"):
             result = await self._search_by_external_serial(serial)
             if result:
                 return result
 
         # Second try: title keyword search restricted to PS2
         if title_hint:
-            result = await self._search_by_title(title_hint)
+            result = await self._search_by_title(title_hint, emulator_key=emulator_key)
             if result:
                 return result
 
@@ -130,13 +139,15 @@ class IGDBClient:
                 logger.debug("IGDBClient: external_games lookup failed: {}", exc)
         return None
 
-    async def _search_by_title(self, title: str) -> IGDBGame | None:
-        """Search by game title, restricted to PS2 platform."""
+    async def _search_by_title(self, title: str, emulator_key: str | None = None) -> IGDBGame | None:
+        """Search by title, restricted to emulator platform when known."""
         try:
+            platform_id = _PLATFORM_IDS.get((emulator_key or "").lower())
+            platform_filter = f"where platforms = ({platform_id}); " if platform_id else ""
             body = (
                 f'search "{title}"; '
                 f"fields id,name,summary,first_release_date,url,cover.*; "
-                f"where platforms = ({_PS2_PLATFORM_ID}); "
+                f"{platform_filter}"
                 f"limit 1;"
             )
             rows = await self._query("games", body)

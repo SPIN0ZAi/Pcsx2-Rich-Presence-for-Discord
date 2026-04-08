@@ -13,9 +13,15 @@ from PIL import Image
 
 
 class TrayApp:
-    def __init__(self, on_quit: Callable[[], None], on_settings: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        on_quit: Callable[[], None],
+        on_settings: Callable[[], None],
+        on_rescan: Callable[[], None],
+    ) -> None:
         self.on_quit = on_quit
         self.on_settings = on_settings
+        self.on_rescan = on_rescan
         self.icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
 
@@ -34,13 +40,14 @@ class TrayApp:
         """Start the system tray icon in a separate background thread."""
         image = self._create_image()
         menu = pystray.Menu(
-            pystray.MenuItem("PCSX2 Discord RPC is Running", lambda: None, enabled=False),
+            pystray.MenuItem("EmuPresence is Running", lambda: None, enabled=False),
+            pystray.MenuItem("Rescan Now", self._handle_rescan),
             pystray.MenuItem("Settings (Restart required)", self._handle_settings),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", self._handle_quit),
         )
 
-        self.icon = pystray.Icon("pcsx2-rpc", image, "PCSX2 Rich Presence", menu)
+        self.icon = pystray.Icon("emu-presence", image, "EmuPresence", menu)
 
         # pystray requires the icon to run in a thread if the main thread 
         # is occupied by the asyncio event loop.
@@ -55,6 +62,9 @@ class TrayApp:
     def _handle_settings(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         # Pystray callbacks run on the tray thread; Settings opens fixing files.
         self.on_settings()
+
+    def _handle_rescan(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        self.on_rescan()
 
     def stop(self) -> None:
         """Stop and remove the tray icon."""

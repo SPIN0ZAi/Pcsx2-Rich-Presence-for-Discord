@@ -85,7 +85,12 @@ class MetadataManager:
     async def __aexit__(self, *args: object) -> None:
         await self.close()
 
-    async def get(self, raw_serial: str, title_hint: str | None = None) -> GameInfo:
+    async def get(
+        self,
+        raw_serial: str,
+        title_hint: str | None = None,
+        emulator_key: str | None = None,
+    ) -> GameInfo:
         """
         Resolve full GameInfo for a PS2 serial.
         
@@ -112,7 +117,7 @@ class MetadataManager:
             logger.debug("MetadataManager: stale cache for {} — background refresh", serial)
             self._pending_fetches.add(serial)
             asyncio.create_task(
-                self._fetch_and_cache(serial, title_hint),
+                self._fetch_and_cache(serial, title_hint, emulator_key),
                 name=f"meta_refresh_{serial}",
             )
             return self._cached_to_game_info(stale)
@@ -120,20 +125,29 @@ class MetadataManager:
         # ── 3. Full fetch (blocking for first-time lookups) ───────────────────
         if serial not in self._pending_fetches:
             self._pending_fetches.add(serial)
-            info = await self._fetch_and_cache(serial, title_hint)
+            info = await self._fetch_and_cache(serial, title_hint, emulator_key)
             self._pending_fetches.discard(serial)
             return info
 
         # Serial is already being fetched — return minimal info for now
         return self._minimal_info(serial, title_hint)
 
-    async def _fetch_and_cache(self, serial: str, title_hint: str | None) -> GameInfo:
+    async def _fetch_and_cache(
+        self,
+        serial: str,
+        title_hint: str | None,
+        emulator_key: str | None,
+    ) -> GameInfo:
         """Fetch from APIs in priority order and store in cache."""
         info: GameInfo | None = None
 
         # ── IGDB ──────────────────────────────────────────────────────────────
         try:
-            igdb_game = await self._igdb.search_by_serial(serial, title_hint)
+            igdb_game = await self._igdb.search_by_serial(
+                serial,
+                title_hint,
+                emulator_key=emulator_key,
+            )
             if igdb_game:
                 logger.info("MetadataManager: IGDB match for {} → {}", serial, igdb_game.title)
                 info = GameInfo(

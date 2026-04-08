@@ -5,10 +5,10 @@ build-backend = "setuptools.backends.legacy:build"
 [project]
 name = "pcsx2-rpc"
 version = "1.0.0"
-description = "Production-quality Discord Rich Presence for PCSX2 (PlayStation 2 Emulator)"
+description = "Unified Discord Rich Presence for PCSX2, RPCS3, and DuckStation"
 authors = [{ name = "PCSX2 RPC Contributors" }]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -32,7 +32,7 @@ dependencies = [
 dev = ["pytest>=7.0", "pytest-asyncio>=0.23", "pytest-mock>=3.0"]
 
 [project.scripts]
-pcsx2-rpc = "main:cli_entry"
+pcsx2-rpc = "main_unified:cli_entry"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
