@@ -8,7 +8,7 @@ Write-Host "Running PyInstaller..."
 # We use --onedir (default) instead of --onefile because Python 3.13 + PyInstaller OneFile 
 # sometimes struggles with unpacking python313.dll into the temporary directory.
 # This creates a folder at dist\EmuPresence\ with the .exe and all its DLLs inside.
-pyinstaller --noconfirm --name EmuPresence --windowed --icon assets/ps2_icon.png --hidden-import pystray --hidden-import PIL --hidden-import pystray._win32 --add-data "assets/ps2_icon.png;assets" launcher.py
+pyinstaller --noconfirm --name EmuPresence --windowed --icon assets/ps2_icon.png --hidden-import pystray --hidden-import PIL --hidden-import pystray._win32 --add-data "assets/ps2_icon.png;assets" --exclude-module pkg_resources --exclude-module setuptools launcher.py
 
 Write-Host "Zipping the release..."
 Compress-Archive -Path "dist\EmuPresence" -DestinationPath "dist\EmuPresence-windows-x64.zip" -Force
