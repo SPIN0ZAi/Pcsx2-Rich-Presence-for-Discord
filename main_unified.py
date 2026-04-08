@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from detection.game_state_extractor import ExtractedGameState, GameStateExtractor
 from detection.process_monitor import ProcessMonitor, EmulatorProcess
 from discord_rpc.client import DiscordRPCClient
-from discord_rpc.unified_presence import UnifiedPresenceBuilder
+from discord_rpc.unified_presence import UnifiedPresenceBuilder, PresenceOptions
 from metadata.metadata_manager import MetadataManager, GameInfo
 from utils.logger import logger, setup_logging
 from utils.storage import load_settings
@@ -38,6 +38,11 @@ class AppRuntimeConfig:
     poll_interval_seconds: int = 5
     clear_delay_seconds: int = 15
     show_notifications: bool = True
+    presence_style: str = "minimal"
+    show_menu_state: bool = True
+    show_paused_state: bool = True
+    show_buttons: bool = True
+    show_elapsed_time: bool = True
 
 
 class MainApp:
@@ -50,7 +55,16 @@ class MainApp:
             igdb_client_id=cfg.igdb_client_id,
             igdb_client_secret=cfg.igdb_client_secret,
         )
-        self._presence = UnifiedPresenceBuilder(idle_image_key=PRODUCTION_IDLE_IMAGE_KEY.strip())
+        self._presence = UnifiedPresenceBuilder(
+            idle_image_key=PRODUCTION_IDLE_IMAGE_KEY.strip(),
+            options=PresenceOptions(
+                style=cfg.presence_style,
+                show_menu_state=cfg.show_menu_state,
+                show_paused_state=cfg.show_paused_state,
+                show_buttons=cfg.show_buttons,
+                show_elapsed_time=cfg.show_elapsed_time,
+            ),
+        )
 
         self._last_identity: tuple[str, int, str | None, str | None] | None = None
         self._last_game_info: GameInfo | None = None
@@ -229,6 +243,11 @@ def _load_runtime_config() -> AppRuntimeConfig:
         poll_interval_seconds=int(cfg.get("app", {}).get("poll_interval_seconds", 5)),
         clear_delay_seconds=int(cfg.get("app", {}).get("clear_delay_seconds", 15)),
         show_notifications=bool(cfg.get("app", {}).get("show_notifications", True)),
+        presence_style=str(cfg.get("app", {}).get("presence_style", "minimal")).strip().lower(),
+        show_menu_state=bool(cfg.get("app", {}).get("show_menu_state", True)),
+        show_paused_state=bool(cfg.get("app", {}).get("show_paused_state", True)),
+        show_buttons=bool(cfg.get("app", {}).get("show_buttons", True)),
+        show_elapsed_time=bool(cfg.get("app", {}).get("show_elapsed_time", True)),
     )
 
 

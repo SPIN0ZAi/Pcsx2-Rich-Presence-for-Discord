@@ -82,6 +82,45 @@ class SettingsWindow(tk.Tk):
             variable=self.notify_var,
         ).grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=6)
 
+        ttk.Label(appf, text="Presence style:").grid(row=3, column=0, sticky=tk.W, pady=4)
+        self.style_var = tk.StringVar(value="minimal")
+        style_combo = ttk.Combobox(
+            appf,
+            textvariable=self.style_var,
+            values=["minimal", "detailed"],
+            state="readonly",
+            width=12,
+        )
+        style_combo.grid(row=3, column=1, sticky=tk.W, padx=8)
+
+        self.menu_state_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            appf,
+            text="Show 'In Menu' state when no game is detected",
+            variable=self.menu_state_var,
+        ).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=4)
+
+        self.paused_state_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            appf,
+            text="Show paused state when emulator reports pause",
+            variable=self.paused_state_var,
+        ).grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=4)
+
+        self.buttons_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            appf,
+            text="Show buttons (e.g. IGDB link)",
+            variable=self.buttons_var,
+        ).grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=4)
+
+        self.elapsed_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            appf,
+            text="Show elapsed time",
+            variable=self.elapsed_var,
+        ).grid(row=7, column=0, columnspan=2, sticky=tk.W, pady=4)
+
         ttk.Label(
             main,
             text="Changes apply after restarting EmuPresence.",
@@ -99,6 +138,11 @@ class SettingsWindow(tk.Tk):
         self.poll_var.set(str(app.get("poll_interval_seconds", 5)))
         self.clear_var.set(str(app.get("clear_delay_seconds", 15)))
         self.notify_var.set(bool(app.get("show_notifications", True)))
+        self.style_var.set(str(app.get("presence_style", "minimal")))
+        self.menu_state_var.set(bool(app.get("show_menu_state", True)))
+        self.paused_state_var.set(bool(app.get("show_paused_state", True)))
+        self.buttons_var.set(bool(app.get("show_buttons", True)))
+        self.elapsed_var.set(bool(app.get("show_elapsed_time", True)))
 
     def _save(self) -> None:
         try:
@@ -121,6 +165,11 @@ class SettingsWindow(tk.Tk):
                 "poll_interval_seconds": poll_interval,
                 "clear_delay_seconds": clear_delay,
                 "show_notifications": bool(self.notify_var.get()),
+                "presence_style": self.style_var.get().strip() or "minimal",
+                "show_menu_state": bool(self.menu_state_var.get()),
+                "show_paused_state": bool(self.paused_state_var.get()),
+                "show_buttons": bool(self.buttons_var.get()),
+                "show_elapsed_time": bool(self.elapsed_var.get()),
             },
         }
 

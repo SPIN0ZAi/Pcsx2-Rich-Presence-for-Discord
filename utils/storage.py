@@ -46,6 +46,11 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "poll_interval_seconds": 5,
         "clear_delay_seconds": 15,
         "show_notifications": True,
+        "presence_style": "minimal",
+        "show_menu_state": True,
+        "show_paused_state": True,
+        "show_buttons": True,
+        "show_elapsed_time": True,
     },
 }
 

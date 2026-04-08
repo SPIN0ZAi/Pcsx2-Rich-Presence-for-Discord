@@ -14,6 +14,7 @@ class ExtractedGameState:
     title: str | None
     serial: str | None
     process_start: float
+    raw_title: str
 
 
 class GameStateExtractor:
@@ -62,6 +63,7 @@ class GameStateExtractor:
             title=game_title,
             serial=serial,
             process_start=proc.create_time,
+            raw_title=title,
         )
 
     def _parse_pcsx2(self, title: str) -> tuple[str | None, str | None]:
