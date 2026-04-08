@@ -43,6 +43,24 @@ class GameStateExtractor:
         "firmware",
         "debugger",
     )
+    _DUCKSTATION_MENU_TOKENS = (
+        "game list",
+        "settings",
+        "controller settings",
+        "memory card",
+        "bios",
+        "achievements",
+    )
+    _DUCKSTATION_NOISE = {
+        "duckstation",
+        "vulkan",
+        "opengl",
+        "d3d11",
+        "d3d12",
+        "software",
+        "fps",
+        "paused",
+    }
     _PCSX2_NOISE = {
         "pcsx2",
         "pcsx2 qt",
@@ -135,11 +153,27 @@ class GameStateExtractor:
         # "Crash Team Racing [SCUS-94426] - DuckStation"
         serial = self._extract_serial(title)
 
-        cleaned = title.replace("DuckStation", "").replace("duckstation", "")
-        cleaned = self._strip_serial(cleaned)
-        cleaned = cleaned.replace("--", "-").strip(" -|")
-        if cleaned and serial:
+        lower_title = title.lower()
+        if self._looks_like_duckstation_menu(lower_title):
+            return None, None
+
+        parts = [p.strip() for p in title.split("|") if p.strip()]
+        for part in parts:
+            cleaned = self._strip_serial(part).strip("- ")
+            if not cleaned:
+                continue
+            if self._looks_like_duckstation_noise(cleaned):
+                continue
+            if self._looks_like_duckstation_menu(cleaned):
+                continue
             return cleaned, serial
+
+        cleaned = self._strip_serial(title)
+        cleaned = cleaned.replace("DuckStation", "").replace("duckstation", "")
+        cleaned = cleaned.replace("--", "-").strip(" -|")
+        if cleaned and not self._looks_like_duckstation_noise(cleaned) and not self._looks_like_duckstation_menu(cleaned):
+            return cleaned, serial
+
         return None, serial
 
     def _parse_generic(self, title: str, emulator_name: str) -> tuple[str | None, str | None]:
@@ -176,6 +210,27 @@ class GameStateExtractor:
     def _looks_like_rpcs3_menu(self, text: str) -> bool:
         token = text.strip().lower()
         return any(marker in token for marker in self._RPCS3_MENU_TOKENS)
+
+    def _looks_like_duckstation_noise(self, text: str) -> bool:
+        token = text.strip().lower()
+        if not token:
+            return True
+        if token in self._DUCKSTATION_NOISE:
+            return True
+        if token.startswith("duckstation"):
+            return True
+        # version-like strings, e.g. 0.1-10998, v0.1-7060-gxxxxx
+        if re.match(r"^v?\d+\.\d+(?:[-\.][0-9a-z]+)*$", token, re.IGNORECASE):
+            return True
+        if token.startswith("0.") and any(ch.isdigit() for ch in token):
+            return True
+        if " fps" in token or token.endswith("fps"):
+            return True
+        return False
+
+    def _looks_like_duckstation_menu(self, text: str) -> bool:
+        token = text.strip().lower()
+        return any(marker in token for marker in self._DUCKSTATION_MENU_TOKENS)
 
     def _looks_like_pcsx2_ui_text(self, text: str) -> bool:
         token = text.strip().lower()
