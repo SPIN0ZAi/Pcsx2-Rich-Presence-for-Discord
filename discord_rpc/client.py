@@ -114,7 +114,7 @@ class DiscordRPCClient:
         try:
             await self._rpc.update(**kwargs)  # type: ignore[union-attr]
             self._last_update = time.monotonic()
-            logger.debug("Discord RPC: presence updated")
+            logger.info("Discord RPC: presence updated (state={})", kwargs.get("state", "?"))
             return True
         except (InvalidPipe, ConnectionError, BrokenPipeError, OSError):
             logger.warning("Discord RPC: pipe broken — marking as disconnected")
