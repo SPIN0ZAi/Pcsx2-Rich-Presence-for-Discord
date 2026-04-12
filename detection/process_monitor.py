@@ -39,6 +39,17 @@ EMULATOR_PROCESS_NAMES: dict[str, tuple[str, str, tuple[str, ...]]] = {
 }
 
 
+def _infer_emulator_key_from_title(title: str) -> str | None:
+    lower = title.lower()
+    if "rpcs3" in lower:
+        return "rpcs3"
+    if "duckstation" in lower:
+        return "duckstation"
+    if "pcsx2" in lower:
+        return "pcsx2"
+    return None
+
+
 def _get_window_title_by_pid_windows(pid: int) -> str | None:
     candidates: list[tuple[str, int]] = []
 
@@ -115,6 +126,63 @@ def _is_pid_foreground_windows(pid: int) -> bool:
         return False
 
 
+def _scan_visible_windows_windows() -> list[EmulatorProcess]:
+    found: list[EmulatorProcess] = []
+    try:
+        foreground_hwnd = ctypes.windll.user32.GetForegroundWindow()
+
+        EnumWindowsProc = ctypes.WINFUNCTYPE(
+            ctypes.c_bool,
+            ctypes.wintypes.HWND,
+            ctypes.wintypes.LPARAM,
+        )
+
+        def callback(hwnd: int, _: int) -> bool:
+            if not ctypes.windll.user32.IsWindowVisible(hwnd):
+                return True
+
+            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+            if length <= 0:
+                return True
+
+            buf = ctypes.create_unicode_buffer(length + 1)
+            ctypes.windll.user32.GetWindowTextW(hwnd, buf, len(buf))
+            title = buf.value.strip()
+            if not title:
+                return True
+
+            key = _infer_emulator_key_from_title(title)
+            if not key:
+                return True
+
+            window_pid = ctypes.wintypes.DWORD()
+            ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
+            pid = int(window_pid.value)
+            display_name = EMULATOR_PROCESS_NAMES[key][1]
+            try:
+                create_time = float(psutil.Process(pid).create_time())
+            except Exception:
+                create_time = 0.0
+
+            found.append(
+                EmulatorProcess(
+                    emulator_key=key,
+                    emulator_name=display_name,
+                    pid=pid,
+                    process_name=display_name,
+                    create_time=create_time,
+                    window_title=title,
+                    is_foreground=(hwnd == foreground_hwnd),
+                )
+            )
+            return True
+
+        ctypes.windll.user32.EnumWindows(EnumWindowsProc(callback), 0)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Window fallback scan skipped: {}", exc)
+    return found
+
+
 class ProcessMonitor:
     """Scans running emulator processes and provides prioritised candidates."""
 
@@ -152,6 +220,9 @@ class ProcessMonitor:
                 continue
             except Exception as exc:  # noqa: BLE001
                 logger.debug("Process scan skipped one process: {}", exc)
+
+        if sys.platform == "win32" and not running:
+            running.extend(_scan_visible_windows_windows())
 
         return running
 
