@@ -20,7 +20,7 @@ _rescan_event: asyncio.Event
 
 # Set this to your production Discord Application Client ID to force all users
 # to use the same application identity from your build.
-PRODUCTION_DISCORD_CLIENT_ID = ""
+PRODUCTION_DISCORD_CLIENT_ID = "1488289613196824666"
 
 # Optional production IGDB credentials. If set, they override user settings.
 PRODUCTION_IGDB_CLIENT_ID = ""
