@@ -16,6 +16,11 @@ EMULATOR_FALLBACK_IMAGES: dict[str, str] = {
 
 DEFAULT_IDLE_IMAGE_KEY = "emu_presence_idle"
 
+_DISCORD_STATE_LIMIT = 128
+_DISCORD_DETAILS_LIMIT = 128
+_DISCORD_LARGE_TEXT_LIMIT = 128
+_DISCORD_BUTTON_LABEL_LIMIT = 32
+
 EMULATOR_URLS: dict[str, str] = {
     "pcsx2": "https://pcsx2.net/",
     "rpcs3": "https://rpcs3.net/",
@@ -41,17 +46,24 @@ class UnifiedPresencePayload:
 
     def to_kwargs(self) -> dict[str, Any]:
         out: dict[str, Any] = {
-            "details": self.details,
-            "state": self.state,
+            "details": _truncate(self.details, _DISCORD_DETAILS_LIMIT),
+            "state": _truncate(self.state, _DISCORD_STATE_LIMIT),
         }
         if self.large_image:
             out["large_image"] = self.large_image
         if self.large_text:
-            out["large_text"] = self.large_text
+            out["large_text"] = _truncate(self.large_text, _DISCORD_LARGE_TEXT_LIMIT)
         if self.start is not None:
             out["start"] = self.start
         if self.buttons:
-            out["buttons"] = self.buttons
+            out["buttons"] = [
+                {
+                    "label": _truncate(button.get("label", ""), _DISCORD_BUTTON_LABEL_LIMIT),
+                    "url": button["url"],
+                }
+                for button in self.buttons
+                if button.get("label") and button.get("url")
+            ][:2]
         return out
 
 
@@ -119,10 +131,10 @@ class UnifiedPresenceBuilder:
             buttons = buttons[:2]
 
         payload = UnifiedPresencePayload(
-            details=details_line,
-            state=state_line,
+            details=_truncate(details_line, _DISCORD_DETAILS_LIMIT),
+            state=_truncate(state_line, _DISCORD_STATE_LIMIT),
             large_image=cover,
-            large_text=large_text,
+            large_text=_truncate(large_text, _DISCORD_LARGE_TEXT_LIMIT),
             start=(int(state.process_start) if (state.process_start and options.show_elapsed_time and not is_menu) else None),
             buttons=buttons,
         )
@@ -216,3 +228,14 @@ class UnifiedPresenceBuilder:
             return "In Fusion menu"
 
         return "In menu"
+
+
+def _truncate(text: str | None, limit: int) -> str | None:
+    if text is None:
+        return None
+    stripped = text.strip()
+    if len(stripped) <= limit:
+        return stripped
+    if limit <= 1:
+        return stripped[:limit]
+    return stripped[: limit - 1].rstrip() + "…"
