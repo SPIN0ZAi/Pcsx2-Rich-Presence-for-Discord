@@ -72,7 +72,7 @@ class UnifiedPresenceBuilder:
 
     def build(self, state: ExtractedGameState, info: GameInfo | None) -> UnifiedPresencePayload | None:
         options = self._options
-        game_title = (info.title if info else None) or state.title
+        game_title = (info.title if info else None) or state.title or self._raw_title_fallback(state)
         cover = (info.cover_url if info else None) or EMULATOR_FALLBACK_IMAGES.get(state.emulator_key)
         is_menu = game_title is None and state.serial is None
         is_paused = bool(options.show_paused_state and state.paused)
@@ -125,6 +125,31 @@ class UnifiedPresenceBuilder:
 
         self._last_payload = payload
         return payload
+
+    def _raw_title_fallback(self, state: ExtractedGameState) -> str | None:
+        raw = (state.raw_title or "").strip()
+        if not raw:
+            return None
+
+        lower = raw.lower()
+        if state.emulator_key == "rpcs3":
+            if any(marker in lower for marker in ("game list", "settings", "home", "welcome", "firmware", "debugger")):
+                return None
+        elif state.emulator_key == "duckstation":
+            if any(marker in lower for marker in ("game list", "settings", "controller settings", "memory card", "bios", "achievements")):
+                return None
+        elif state.emulator_key == "pcsx2":
+            if any(marker in lower for marker in ("pcsx2", "settings", "game list", "configuration", "debugger", "about")):
+                return None
+
+        parts = [part.strip() for part in raw.split("|") if part.strip()]
+        for part in parts:
+            cleaned = part.replace("DuckStation", "").replace("RPCS3", "").replace("PCSX2", "").strip(" -")
+            if cleaned and not cleaned.lower().startswith(("v", "0.")):
+                return cleaned
+
+        cleaned = raw.replace("DuckStation", "").replace("RPCS3", "").replace("PCSX2", "").strip(" -|")
+        return cleaned or None
 
     def _menu_state_text(self, state: ExtractedGameState) -> str:
         raw = (state.raw_title or "").lower()
