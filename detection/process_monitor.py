@@ -36,6 +36,13 @@ EMULATOR_PROCESS_NAMES: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "pcsx2": ("pcsx2", "PCSX2", ("pcsx2.exe", "pcsx2-qt.exe", "pcsx2-avx2.exe", "pcsx2")),
     "rpcs3": ("rpcs3", "RPCS3", ("rpcs3.exe", "rpcs3")),
     "duckstation": ("duckstation", "DuckStation", ("duckstation.exe", "duckstation-qt.exe", "duckstation")),
+    "cemu": ("cemu", "Cemu", ("cemu.exe", "cemu")),
+    "dolphin": ("dolphin", "Dolphin", ("dolphin.exe", "dolphin-qt2.exe", "dolphin-emu.exe", "dolphin")),
+    "ryujinx": ("ryujinx", "Ryujinx", ("ryujinx.exe", "ryujinx")),
+    "suyu": ("suyu", "suyu", ("suyu.exe", "suyu")),
+    "yuzu": ("yuzu", "yuzu", ("yuzu.exe", "yuzu")),
+    "mesen": ("mesen", "Mesen", ("mesen.exe", "mesen")),
+    "fusion": ("fusion", "Fusion", ("fusion.exe", "kega fusion.exe", "fusion")),
 }
 
 
@@ -47,6 +54,20 @@ def _infer_emulator_key_from_title(title: str) -> str | None:
         return "duckstation"
     if "pcsx2" in lower:
         return "pcsx2"
+    if "cemu" in lower:
+        return "cemu"
+    if "dolphin" in lower:
+        return "dolphin"
+    if "ryujinx" in lower:
+        return "ryujinx"
+    if "suyu" in lower:
+        return "suyu"
+    if "yuzu" in lower:
+        return "yuzu"
+    if "mesen" in lower:
+        return "mesen"
+    if "fusion" in lower:
+        return "fusion"
     return None
 
 

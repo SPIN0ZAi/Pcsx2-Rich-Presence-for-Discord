@@ -20,6 +20,13 @@ EMULATOR_URLS: dict[str, str] = {
     "pcsx2": "https://pcsx2.net/",
     "rpcs3": "https://rpcs3.net/",
     "duckstation": "https://www.duckstation.org/",
+    "cemu": "https://cemu.info/",
+    "dolphin": "https://dolphin-emu.org/",
+    "ryujinx": "https://ryujinx.org/",
+    "suyu": "https://suyu.dev/",
+    "yuzu": "https://yuzu-emu.org/",
+    "mesen": "https://mesen.ca/",
+    "fusion": "https://www.eidolons-inn.net/tiki-index.php?page=KegaFusion",
 }
 
 
@@ -172,5 +179,40 @@ class UnifiedPresenceBuilder:
             if "bios" in raw:
                 return "In PCSX2 BIOS"
             return "In PCSX2 menu"
+
+        if state.emulator_key == "cemu":
+            if "graphic" in raw or "settings" in raw:
+                return "In Cemu settings"
+            return "In Cemu menu"
+
+        if state.emulator_key == "dolphin":
+            if "settings" in raw:
+                return "In Dolphin settings"
+            return "In Dolphin menu"
+
+        if state.emulator_key == "ryujinx":
+            if "settings" in raw:
+                return "In Ryujinx settings"
+            return "In Ryujinx menu"
+
+        if state.emulator_key == "suyu":
+            if "settings" in raw:
+                return "In suyu settings"
+            return "In suyu menu"
+
+        if state.emulator_key == "yuzu":
+            if "settings" in raw:
+                return "In yuzu settings"
+            return "In yuzu menu"
+
+        if state.emulator_key == "mesen":
+            if "settings" in raw:
+                return "In Mesen settings"
+            return "In Mesen menu"
+
+        if state.emulator_key == "fusion":
+            if "settings" in raw:
+                return "In Fusion settings"
+            return "In Fusion menu"
 
         return "In menu"

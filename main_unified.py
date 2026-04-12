@@ -104,6 +104,9 @@ class MainApp:
         logger.info("EmuPresence stopped.")
 
     async def _tick(self) -> None:
+        if not self._discord.is_connected:
+            await self._discord.ensure_connected()
+
         running = self._monitor.scan()
         active = self._select_active_process(running)
 
@@ -197,18 +200,6 @@ class MainApp:
 
         self._discord_warning_shown = True
         logger.warning("Could not connect to Discord. Please make sure Discord is running.")
-        try:
-            if sys.platform == "win32":
-                import ctypes
-
-                ctypes.windll.user32.MessageBoxW(
-                    None,
-                    "Could not connect to Discord. Please make sure Discord is running.",
-                    "EmuPresence",
-                    0x40,
-                )
-        except Exception:
-            pass
 
 
 def _setup_signal_handlers(loop: asyncio.AbstractEventLoop) -> None:
