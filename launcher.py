@@ -51,8 +51,11 @@ def run_launcher() -> None:
     tray = TrayApp(on_quit=_on_quit, on_settings=_run_settings, on_rescan=request_rescan)
 
     try:
-        logger.info("Starting system tray icon...")
-        tray.run_detached()
+        try:
+            logger.info("Starting system tray icon...")
+            tray.run_detached()
+        except Exception as tray_err:
+            logger.warning("Failed to start tray icon: {}. Running without tray.", tray_err)
 
         logger.info("Starting async service...")
         asyncio.run(_async_main())
@@ -60,7 +63,10 @@ def run_launcher() -> None:
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
     finally:
-        tray.stop()
+        try:
+            tray.stop()
+        except Exception:
+            pass
         logger.info("Launcher exited cleanly.")
 
 
